@@ -186,13 +186,13 @@
         }
 
         /* Buttons */
-        .buttons {
+        .buttons-area {
+            position: relative;
+            min-height: 160px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 25px;
-            flex-wrap: wrap;
-            min-height: 70px;
+            align-items: flex-start;
+            padding-top: 10px;
         }
 
         .btn-yes {
@@ -248,18 +248,19 @@
         }
 
         .btn-no {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 182, 213, 0.7);
-            border: 1px solid rgba(255, 105, 180, 0.2);
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 182, 213, 0.85);
+            border: 1px solid rgba(255, 105, 180, 0.3);
             padding: 14px 40px;
             font-size: 16px;
             font-family: 'Poppins', sans-serif;
             font-weight: 400;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.15s ease;
-            position: fixed;
+            transition: left 0.2s ease, top 0.2s ease;
+            position: absolute;
             z-index: 100;
+            white-space: nowrap;
         }
 
         .btn-no:hover {
@@ -473,12 +474,12 @@
         </div>
         <div class="envelope">💌</div>
         <div class="big-heart">💖</div>
-        <h1 class="title">Will You Be My Valentine  Kushi?</h1>
+        <h1 class="title">Will You Be My Valentine  kushi?</h1>
         <p class="subtitle">
             Every moment with you feels like a dream ✨<br>
             You make my heart skip a beat 💓
         </p>
-        <div class="buttons">
+        <div class="buttons-area" id="buttonsArea">
             <button class="btn-yes" onclick="sayYes()">Yes! 💕</button>
             <button class="btn-no" id="noBtn" onmouseover="runAway()" onclick="runAway()">No 😢</button>
         </div>
@@ -562,40 +563,45 @@
 
         function runAway() {
             escapeCount++;
-            const viewW = window.innerWidth;
-            const viewH = window.innerHeight;
+
+            const area = document.getElementById('buttonsArea');
+            const areaRect = area.getBoundingClientRect();
             const btnW = noBtn.offsetWidth;
             const btnH = noBtn.offsetHeight;
 
-            const maxX = viewW - btnW - 20;
-            const maxY = viewH - btnH - 20;
+            // Calculate max positions within the buttons-area container
+            const maxX = area.offsetWidth - btnW;
+            const maxY = area.offsetHeight - btnH;
 
             let newX = Math.random() * maxX;
             let newY = Math.random() * maxY;
 
-            // Make sure it goes far enough away
-            const currentRect = noBtn.getBoundingClientRect();
-            const dx = newX - currentRect.left;
-            const dy = newY - currentRect.top;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 150) {
-                newX = (newX + viewW / 2) % maxX;
-                newY = (newY + viewH / 2) % maxY;
+            // Make sure it moves far enough from current position
+            const currentLeft = parseInt(noBtn.style.left) || 0;
+            const currentTop = parseInt(noBtn.style.top) || 0;
+            const dx = newX - currentLeft;
+            const dy = newY - currentTop;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 80) {
+                newX = (newX + maxX / 2) % Math.max(maxX, 1);
+                newY = (newY + maxY / 2) % Math.max(maxY, 1);
             }
+
+            // Clamp within boundaries
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
 
             noBtn.style.left = newX + 'px';
             noBtn.style.top = newY + 'px';
-            noBtn.style.position = 'fixed';
 
             // Show funny message
             const msgIndex = (escapeCount - 1) % funnyMessages.length;
             attemptText.textContent = funnyMessages[msgIndex];
-
-            // Buttons stay constant size
         }
 
         // Also run away on mouse approach (not just hover)
         document.addEventListener('mousemove', (e) => {
+            if (noBtn.style.display === 'none') return;
             const rect = noBtn.getBoundingClientRect();
             const btnCenterX = rect.left + rect.width / 2;
             const btnCenterY = rect.top + rect.height / 2;
@@ -603,12 +609,27 @@
             const dy = e.clientY - btnCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < 100) {
+            if (distance < 80) {
                 runAway();
             }
         });
 
         // Touch support for mobile
+        document.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const rect = noBtn.getBoundingClientRect();
+            const btnCenterX = rect.left + rect.width / 2;
+            const btnCenterY = rect.top + rect.height / 2;
+            const dx = touch.clientX - btnCenterX;
+            const dy = touch.clientY - btnCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 80) {
+                e.preventDefault();
+                runAway();
+            }
+        }, { passive: false });
+
         document.addEventListener('touchmove', (e) => {
             const touch = e.touches[0];
             const rect = noBtn.getBoundingClientRect();
